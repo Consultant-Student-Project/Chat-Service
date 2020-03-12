@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -30,7 +29,6 @@ func connectionHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	token := r.FormValue("token")
-	fmt.Println(token)
 	sendTokenToAuthenticationService(token, r)
 
 }
@@ -47,7 +45,7 @@ func sendTokenToAuthenticationService(token string, r *http.Request) {
 
 	req, err := http.NewRequest("POST", urlStr, strings.NewReader(data.Encode()))
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println("Request couldn't send.")
 	}
 	server2serverkey, err := ioutil.ReadFile("server2serverAuth.key")
 	if err != nil {
@@ -62,14 +60,18 @@ func sendTokenToAuthenticationService(token string, r *http.Request) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		log.Fatalln(err)
+		fmt.Println("Client error : ", err)
+	}
+	if res.StatusCode == 200 {
+		fmt.Println("Token is true. Autherization completed.")
+	} else {
+		fmt.Println("Token is wrong. Permission denied.")
 	}
 	var user User
 	err = json.NewDecoder(res.Body).Decode(&user)
 	if err != nil {
-		fmt.Println("Error", err)
+		fmt.Println("Decoder error : ", err)
 	}
-	fmt.Println(res)
 	fmt.Println(user)
 
 }
