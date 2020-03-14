@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/Consultant-Student-Project/Chat-Service/config"
 	"github.com/gorilla/mux"
 )
 
@@ -21,7 +22,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/connect", connectionHandler).Methods("POST")
-	http.ListenAndServe(":8080", r)
+	http.ListenAndServe(":"+config.C.Server.Address, r)
 
 }
 
@@ -34,7 +35,7 @@ func connectionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendTokenToAuthenticationService(token string, r *http.Request) {
-	apiURL := "http://localhost:3000"
+	apiURL := "http://localhost:" + config.C.AuthenticationServer.Address
 	resource := "/resolve/"
 	data := url.Values{}
 	data.Set("token", token)

@@ -1,0 +1,12 @@
+database:
+  user: root
+  password: root
+  net: tcp
+  addr: mongodb://localhost:8080
+  dbname: chat-service
+
+server:
+  adress: 8080
+
+authenticationServer:
+  adress: 3000
