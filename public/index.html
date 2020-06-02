@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+
+    <div id="app">
+        <div v-if="connected">
+            <div class="messages">
+                <div v-for="m in messages" class="message">
+                    {{m.author}} : {{ m.content}}
+                </div>
+            </div>
+
+            <input type="text" v-model="message"> <button @click="send">YOLLA</button>
+
+        </div>
+
+        <div v-else>
+            <input type="text" v-model="authKey">
+            <input type="text" placeholder="to" v-model="to"> <button @click="connect">BAĞLAN</button>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+    <script>
+        var socket = io("ws://localhost:80");
+        socket.on("request", p => console.log("SELAAMMM"));
+
+        new Vue({
+            el: '#app',
+            data: {
+                id: "12",
+                username: "",
+                connected: false,
+                authKey: "",
+                message: "",
+                messages: [],
+                to: ""
+            },
+
+            methods: {
+                init: function () {
+                    socket.on("oldMessages", msgs => this.messages = msgs);
+                    socket.on("message", msg => {
+                        this.messages.push(msg);
+                        console.log("got msg");
+                    });
+                    socket.on("hid", msg => console.log("Get id", msg));
+                },
+                connect: function () {
+
+                    socket.emit("authHandShake", this.authKey)
+                    socket.on("authHandShake", p => {
+                        this.username = p.username
+                        this.init()
+                        this.connected = true
+
+                    })
+                },
+                send: function () {
+                    const mobj = {
+                        content: this.message,
+                        author: this.username,
+                        to: this.to,
+                        id: this.id,
+                    }
+                    socket.emit("message", mobj);
+                }
+            }
+
+        })
+
+
+
+
+
+    </script>
+</body>
+
+</html>
