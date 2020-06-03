@@ -1,8 +1,15 @@
 const express = require("express");
 const io = require("socket.io")(80);
 const fetch = require("node-fetch")
+const mongoose = require("mongoose")
 
 var app = express();
+
+mongoose.connect("mongodb://localhost:27017/ConsultantStudentProject", { useNewUrlParser: true });
+var db = mongoose.connection;
+db.once("open", function () {
+    console.log("MongoDB connected correctly.")
+})
 
 app.use(express.static('public'))
 
