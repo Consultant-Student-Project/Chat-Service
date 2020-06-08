@@ -2,6 +2,8 @@ const express = require("express");
 const io = require("socket.io")(80);
 const fetch = require("node-fetch")
 const mongoose = require("mongoose")
+const message = require("./modals/Message");
+const lastOnline = require("./modals/LastOnline");
 
 var app = express();
 
@@ -37,6 +39,15 @@ io.on('connection', socket => {
             // Client id'sini almış oluyor
             socket.on("message", msg => {
                 // TODO: mesajı database e yaz
+                var message = new Message({
+                    from: msg.from,
+                    to: msg.to,
+                    sendDate: Date.now()
+                });
+                messages.save(function (err, doc) {
+                    if (err) return console.log(err);
+                    console.log("Message saved");
+                })
                 if (socketMap[msg.to]) {
                     socketMap[msg.to].emit("message", msg)
                     socket.emit("message", msg)
@@ -45,6 +56,11 @@ io.on('connection', socket => {
 
             socket.on("disconnection", () => {
                 // TODO: çıkış tarihini tut ya da güncelle
+                LastOnline.count({ userName: response.username }, function (err, result) {
+                    if (result > 0) {
+                        LastOnline.findOneAndUpdate({ userName: response.username }, { lastOnline: Date.now() })
+                    }
+                })
                 delete socketMap[response.username]
             });
         })

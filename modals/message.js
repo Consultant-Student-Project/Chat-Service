@@ -4,9 +4,6 @@ const messageSchema = new mongoose.Schema({
     from: {
         type: String,
         required: true,
-        index: {
-            unique: true,
-        }
     },
     to: {
         type: String,
