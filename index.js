@@ -24,12 +24,26 @@ io.on('connection', socket => {
     socket.on("authHandShake", token => {
         authHandShake(token, response => {
 
-            // TODO: last online ı kontrol et
-            // TODO: okunmamışları yolla
+
             if (!response.username) {
                 return
             }
             console.log(response.username)
+            // TODO: last online ı kontrol et
+            LastOnline.count({ userName: response.username }, function (err, result) {
+                if (result > 0) {
+                    let userLastOnline = LastOnline.find({ userName: response.username })
+                    let lastOnlineTime = userLastOnline.lastOnline
+                    // TODO: okunmamışları yolla
+                    let newMessages = find({ lastOnline: { $gte: lastOnlineTime } }).sort({ lastOnline: 1 });
+                    socket.emit("offlineMessages", newMessages)
+                }
+            });
+
+
+
+
+
             socketMap[response.username] = socket
             socket.emit("authHandShake", {
                 username: response.username
@@ -59,6 +73,11 @@ io.on('connection', socket => {
                 LastOnline.count({ userName: response.username }, function (err, result) {
                     if (result > 0) {
                         LastOnline.findOneAndUpdate({ userName: response.username }, { lastOnline: Date.now() })
+                    } else {
+                        LastOnline.create({ userName: response.username, lastOnline: Date.now() }, function (err, username) {
+                            if (err) return handleError(err);
+                            // saved!
+                        });
                     }
                 })
                 delete socketMap[response.username]
