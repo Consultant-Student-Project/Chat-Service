@@ -1,19 +1,24 @@
 const express = require("express");
-const io = require("socket.io")(80);
+var app = express();
+var server = app.listen(8080);
+const io = require("socket.io").listen(server);
 const fetch = require("node-fetch")
 const mongoose = require("mongoose")
-const message = require("./modals/Message");
-const lastOnline = require("./modals/LastOnline");
+const Message = require("./modals/Message");
+const LastOnline = require("./modals/LastOnline");
+const cors = require("cors");
 
-var app = express();
+app.use(cors({ credentials: true, origin: 'http://127.0.0.1:8887' }))
 
-mongoose.connect("mongodb://localhost:27017/ConsultantStudentProject", { useNewUrlParser: true });
+
+
+mongoose.connect("mongodb://mongo:27017/ConsultantStudentProject", { useNewUrlParser: true });
 var db = mongoose.connection;
 db.once("open", function () {
     console.log("MongoDB connected correctly.")
 })
 
-app.use(express.static('public'))
+
 
 let socketMap = {};
 let id = 0;
@@ -35,7 +40,7 @@ io.on('connection', socket => {
                     let userLastOnline = LastOnline.find({ userName: response.username })
                     let lastOnlineTime = userLastOnline.lastOnline
                     // TODO: okunmamışları yolla
-                    let newMessages = find({ lastOnline: { $gte: lastOnlineTime } }).sort({ lastOnline: 1 });
+                    let newMessages = LastOnline.find({ lastOnline: { $gte: lastOnlineTime } }).sort({ lastOnline: 1 });
                     socket.emit("offlineMessages", newMessages)
                 }
             });
@@ -58,14 +63,14 @@ io.on('connection', socket => {
                     to: msg.to,
                     sendDate: Date.now()
                 });
-                messages.save(function (err, doc) {
+                message.save(function (err, doc) {
                     if (err) return console.log(err);
                     console.log("Message saved");
                 })
                 if (socketMap[msg.to]) {
                     socketMap[msg.to].emit("message", msg)
-                    socket.emit("message", msg)
                 }
+                socket.emit("message", msg)
             });
 
             socket.on("disconnection", () => {
@@ -88,7 +93,7 @@ io.on('connection', socket => {
 
 function authHandShake(token, cb) {
     console.log(process.env.S2S_authkey)
-    fetch('http://localhost:3000/resolve', {
+    fetch('http://authentication:3000/resolve', {
         method: 'post',
         body: JSON.stringify({ token }),
         headers: { 'Content-Type': 'application/json', 'x-server-auth-key': process.env.S2S_authkey },
@@ -97,11 +102,3 @@ function authHandShake(token, cb) {
         .then(json => cb(json))
         .catch(err => console.log(err));
 }
-
-
-
-
-
-
-
-app.listen(8080);
