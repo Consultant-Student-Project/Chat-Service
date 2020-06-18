@@ -25,10 +25,10 @@ let id = 0;
 let messages = [];
 
 io.on('connection', socket => {
-    console.log("socket connected");
+
     socket.on("authHandShake", token => {
         authHandShake(token, response => {
-
+            console.log(response.username + " connected");
 
             if (!response.username) {
                 return
@@ -37,11 +37,20 @@ io.on('connection', socket => {
             // TODO: last online ı kontrol et
             LastOnline.count({ userName: response.username }, function (err, result) {
                 if (result > 0) {
-                    let userLastOnline = LastOnline.find({ userName: response.username })
-                    let lastOnlineTime = userLastOnline.lastOnline
-                    // TODO: okunmamışları yolla
-                    let newMessages = LastOnline.find({ lastOnline: { $gte: lastOnlineTime } }).sort({ lastOnline: 1 });
-                    socket.emit("offlineMessages", newMessages)
+                    LastOnline.findOne({ userName: response.username }, (err, result) => {
+                        if (err) {
+                            console.error(err)
+                            return
+                        }
+                        let lastOnlineTime = result.lastOnline
+                        console.log(lastOnlineTime)
+                        // TODO: okunmamışları yolla
+                        Message.find({ sendDate: { $gte: lastOnlineTime }, to: response.username }).sort({ sendDate: 1 }).exec((err, documents) => {
+                            socket.emit("offlineMessages", documents)
+                        });
+                    })
+
+
                 }
             });
 
@@ -59,6 +68,7 @@ io.on('connection', socket => {
             socket.on("message", msg => {
                 // TODO: mesajı database e yaz
                 var message = new Message({
+                    content: msg.content,
                     from: msg.from,
                     to: msg.to,
                     sendDate: Date.now()
@@ -73,11 +83,17 @@ io.on('connection', socket => {
                 socket.emit("message", msg)
             });
 
-            socket.on("disconnection", () => {
+            socket.on("disconnect", function () {
+                console.log(response.username + " disconnect from socket")
                 // TODO: çıkış tarihini tut ya da güncelle
                 LastOnline.count({ userName: response.username }, function (err, result) {
                     if (result > 0) {
-                        LastOnline.findOneAndUpdate({ userName: response.username }, { lastOnline: Date.now() })
+                        LastOnline.findOneAndUpdate({ userName: response.username }, { lastOnline: Date.now() }, (err, documents) => {
+                            if (err) {
+                                console.error(err)
+                                return
+                            }
+                        })
                     } else {
                         LastOnline.create({ userName: response.username, lastOnline: Date.now() }, function (err, username) {
                             if (err) return handleError(err);
