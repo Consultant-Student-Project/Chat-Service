@@ -51,6 +51,10 @@ io.on('connection', socket => {
                     })
 
 
+                } else {
+                    Message.find({ to: response.username }).sort({ sendDate: 1 }).exec((err, documents) => {
+                        socket.emit("offlineMessages", documents)
+                    });
                 }
             });
 
