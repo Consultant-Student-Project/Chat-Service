@@ -34,7 +34,7 @@ io.on('connection', socket => {
                 return
             }
             console.log(response.username)
-            // TODO: last online ı kontrol et
+            // Check last online
             LastOnline.count({ userName: response.username }, function (err, result) {
                 if (result > 0) {
                     LastOnline.findOne({ userName: response.username }, (err, result) => {
@@ -43,8 +43,7 @@ io.on('connection', socket => {
                             return
                         }
                         let lastOnlineTime = result.lastOnline
-                        console.log(lastOnlineTime)
-                        // TODO: okunmamışları yolla
+                        // Send offline messages
                         Message.find({ sendDate: { $gte: lastOnlineTime }, to: response.username }).sort({ sendDate: 1 }).exec((err, documents) => {
                             socket.emit("offlineMessages", documents)
                         });
@@ -68,9 +67,9 @@ io.on('connection', socket => {
             })
 
 
-            // Client id'sini almış oluyor
+
             socket.on("message", msg => {
-                // TODO: mesajı database e yaz
+                // Write message to database
                 var message = new Message({
                     content: msg.content,
                     from: msg.from,
@@ -89,7 +88,7 @@ io.on('connection', socket => {
 
             socket.on("disconnect", function () {
                 console.log(response.username + " disconnect from socket")
-                // TODO: çıkış tarihini tut ya da güncelle
+                // Save or change last online time
                 LastOnline.count({ userName: response.username }, function (err, result) {
                     if (result > 0) {
                         LastOnline.findOneAndUpdate({ userName: response.username }, { lastOnline: Date.now() }, (err, documents) => {
